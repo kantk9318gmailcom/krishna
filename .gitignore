@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+ENV/
+.Python
+.pytest_cache/
+.mypy_cache/
+
+# Environment
+.env
+.env.*
+
+# Flask uploads/temp
+src/students.csv
+instance/
+
+# IDE/editor
+.vscode/
+.idea/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (if any demos)
+node_modules/

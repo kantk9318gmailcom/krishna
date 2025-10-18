@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic AI Web App Creator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+        }
+        .scrollable-content {
+            height: calc(100vh - 4rem);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #d1d5db #f3f4f6;
+        }
+        .scrollable-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        .scrollable-content::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border-radius: 10px;
+        }
+        .scrollable-content::-webkit-scrollbar-thumb {
+            background-color: #d1d5db;
+            border-radius: 10px;
+            border: 2px solid #f3f4f6;
+        }
+        .loading-dot {
+            animation: dot-pulse 1.5s infinite;
+        }
+        .loading-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .loading-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes dot-pulse {
+            0%, 80%, 100% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .btn-green {
+            background-color: #10B981;
+            box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
+        }
+        .btn-green:hover {
+            background-color: #059669;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 400px;
+            animation: modal-fade-in 0.3s ease-out;
+        }
+        @keyframes modal-fade-in {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .code-view {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: monospace;
+            overflow-y: auto;
+            background-color: #1f2937;
+            color: #e5e7eb;
+            padding: 1rem;
+            border-radius: 1.5rem;
+            border: 1px solid #4b5563;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-8 flex items-center justify-center">
+
+    <div class="container bg-white p-8 rounded-3xl shadow-2xl max-w-7xl w-full">
+        <!-- Input & Controls Section -->
+        <div class="flex flex-col space-y-6 scrollable-content pr-4">
+            <h1 class="text-4xl font-bold text-gray-800 mb-4">Agentic App Creator</h1>
+            <p class="text-gray-600 leading-relaxed">Describe your project, and our team of AI agents will get to work building a full-stack application for you. Watch the live preview as the code is developed in real time.</p>
+
+            <div id="initial-form">
+                <div class="space-y-4">
+                    <label for="projectTitle" class="block text-gray-700 font-semibold">Project Title</label>
+                    <input type="text" id="projectTitle" placeholder="e.g., Todo List App" class="w-full p-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div class="space-y-4 mt-4">
+                    <label for="techStack" class="block text-gray-700 font-semibold">Tech Stack</label>
+                    <select id="techStack" class="w-full p-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="html-css-js" selected>HTML, CSS & JavaScript</option>
+                        <option value="react">React & Tailwind CSS</option>
+                        <option value="angular">Angular & Tailwind CSS</option>
+                        <option value="mern">MERN Stack (MongoDB, Express, React, Node.js)</option>
+                        <option value="java-full-stack">Java Full-Stack (Spring Boot)</option>
+                    </select>
+                </div>
+                <div class="space-y-4 mt-4">
+                    <label for="projectDescription" class="block text-gray-700 font-semibold">Project Description</label>
+                    <textarea id="projectDescription" rows="6" placeholder="A simple Todo List App that allows users to add, edit, and delete tasks. The tasks should be stored in Firestore for real-time updates across devices." class="w-full p-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+                </div>
+                <button id="createButton" class="w-full mt-6 p-4 text-white font-bold rounded-xl transition-transform transform hover:scale-105 focus:outline-none btn-green">
+                    Create App
+                </button>
+            </div>
+            
+            <div id="modification-form" class="hidden">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Make a Change</h2>
+                <p class="text-gray-600 leading-relaxed">Describe a new feature or modification you would like to make to the app.</p>
+                <div class="space-y-4 mt-4">
+                    <label for="modificationPrompt" class="block text-gray-700 font-semibold">Modification Prompt</label>
+                    <textarea id="modificationPrompt" rows="4" placeholder="e.g., Change the background color to blue and add a 'save' button." class="w-full p-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+                </div>
+                <button id="modifyButton" class="w-full mt-6 p-4 text-white font-bold rounded-xl transition-transform transform hover:scale-105 focus:outline-none bg-blue-500 hover:bg-blue-600">
+                    Apply Changes
+                </button>
+            </div>
+
+            <div id="statusMessage" class="text-center text-gray-500 text-sm italic min-h-[2rem]"></div>
+            
+            <a id="downloadLink" href="#" download="my-app.zip" class="w-full p-4 text-white font-bold text-center rounded-xl transition-transform transform hover:scale-105 focus:outline-none bg-indigo-600 hover:bg-indigo-700 hidden">
+                Download App
+            </a>
+        </div>
+
+        <!-- Live Preview & Code Section -->
+        <div class="bg-gray-200 p-2 rounded-2xl shadow-inner flex flex-col h-full">
+            <div class="flex items-center justify-between p-3 bg-gray-300 rounded-t-xl text-gray-700 text-sm font-medium">
+                <div class="flex space-x-2">
+                    <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <div class="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                    <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                </div>
+                <div class="flex space-x-2">
+                    <button id="livePreviewBtn" class="px-3 py-1 rounded-xl bg-gray-500 text-white font-semibold">Live Preview</button>
+                    <button id="codeViewBtn" class="px-3 py-1 rounded-xl bg-gray-400 text-gray-800 font-semibold">View Code</button>
+                </div>
+                <div></div>
+            </div>
+            <div id="livePreviewContainer" class="w-full flex-grow bg-white rounded-b-xl overflow-hidden">
+                <iframe id="livePreviewFrame" class="w-full h-full"></iframe>
+            </div>
+            <div id="codeViewContainer" class="w-full flex-grow bg-white rounded-b-xl overflow-hidden hidden">
+                <div class="p-4 flex flex-col h-full">
+                    <select id="fileSelect" class="w-full p-2 mb-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"></select>
+                    <div class="code-view flex-grow">
+                        <pre><code id="codeContent">Select a file to view its code.</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Modal for Messages -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-4">App Status</h2>
+            <p id="modalMessage" class="text-gray-700 mb-6">Your app works! The AI agents have successfully built it.</p>
+            <button id="closeModalBtn" class="w-full px-4 py-2 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 transition-colors">Close</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                const createButton = document.getElementById('createButton');
+                const modifyButton = document.getElementById('modifyButton');
+                const initialForm = document.getElementById('initial-form');
+                const modificationForm = document.getElementById('modification-form');
+                const statusMessage = document.getElementById('statusMessage');
+                const livePreviewFrame = document.getElementById('livePreviewFrame');
+                const livePreviewContainer = document.getElementById('livePreviewContainer');
+                const codeViewContainer = document.getElementById('codeViewContainer');
+                const livePreviewBtn = document.getElementById('livePreviewBtn');
+                const codeViewBtn = document.getElementById('codeViewBtn');
+                const fileSelect = document.getElementById('fileSelect');
+                const codeContent = document.getElementById('codeContent');
+                const downloadLink = document.getElementById('downloadLink');
+                const messageModal = document.getElementById('messageModal');
+                const modalMessage = document.getElementById('modalMessage');
+                const closeModalBtn = document.getElementById('closeModalBtn');
+                
+                let currentTechStack = 'html-css-js';
+                const fileContents = {};
+
+                const showMessageModal = (message) => {
+                    modalMessage.textContent = message;
+                    messageModal.style.display = 'flex';
+                };
+
+                closeModalBtn.addEventListener('click', () => {
+                    messageModal.style.display = 'none';
+                });
+
+                const sanitizeInput = (input) => {
+                    if (!input) return '';
+                    return input.replace(/`/g, '`').replace(/\$/g, '$');
+                };
+
+                const initialPreviewContent = '<body class="bg-gray-100 p-8 flex items-center justify-center min-h-screen"><div class="bg-white p-8 rounded-3xl shadow-xl text-center max-w-md w-full border-2 border-emerald-500"><p class="text-gray-600 mb-6">App is being generated... (This is a simplified preview)</p></div></body>';
+                
+                const finalPreviewContent = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>App is Ready!</title><script src="https://cdn.tailwindcss.com"><' + '/script></head><body class="bg-gray-100 p-8 flex items-center justify-center min-h-screen"><div class="bg-white p-8 rounded-3xl shadow-xl text-center max-w-md w-full border-2 border-emerald-500"><h1 class="text-3xl font-bold text-gray-800 mb-4">App is Ready!</h1><p class="text-gray-600 mb-6">All set! Your app is fully functional.</p><button id="finalButton" class="px-6 py-3 bg-blue-500 text-white font-medium rounded-full shadow-lg hover:bg-blue-600 transition-colors transform hover:scale-105">View Console Log</button></div></body></html>';
+
+                const generateMockFiles = (projectTitle, techStack, projectDescription) => {
+                    fileContents['index.html'] = `<!DOCTYPE html><html><head><title>${projectTitle}</title></head><body><h1>Hello, World!</h1><p>Generated by the AI.</p></body></html>`;
+                    fileContents['styles.css'] = "body { background-color: #f0f9ff; }";
+                    fileContents['main.js'] = "console.log('App is running!');";
+                    fileContents['README.md'] = `This is a basic README file for your project '${projectTitle}' generated with ${techStack}.`;
+
+                    fileContents['App.js'] = 'import React from \'react\';\nimport \'./App.css\';\n\nfunction App() {\n  return (\n    <div className="App">\n      <header className="App-header">\n        <h1>MERN Stack App</h1>\n        <p>This is a simulated MERN stack application generated by the AI agent.</p>\n        <p>The backend is also generated and included in the zip file!</p>\n      </header>\n    </div>\n  );\n}\n\nexport default App;\n';
+                    fileContents['server.js'] = 'const express = require(\'express\');\nconst app = express();\nconst PORT = process.env.env.PORT || 5000;\n\napp.get(\'/\', (req, res) => {\n  res.send(\'Hello from the Express server!\');\n});\n\napp.listen(PORT, () => console.log(\'Server running on port \' + PORT));';
+                    fileContents['pom.xml'] = '<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"><modelVersion>4.0.0</modelVersion><groupId>com.example</groupId><artifactId>demo</artifactId><version>0.0.1-SNAPSHOT</version><name>demo</name><description>Demo project for Spring Boot</description><properties><java.version>17</java.version></properties><dependencies><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency></dependencies><build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></build></project>';
+                    fileContents['DemoApplication.java'] = 'package com.example.demo;\nimport org.springframework.boot.SpringApplication;\nimport org.springframework.boot.autoconfigure.SpringBootApplication;\n@SpringBootApplication\npublic class DemoApplication {\n    public static void main(String[] args) {\n        SpringApplication.run(DemoApplication.class, args);\n    }\n}';
+                    fileContents['HelloController.java'] = 'package com.example.demo.controller;\nimport org.springframework.web.bind.annotation.GetMapping;\nimport org.springframework.web.bind.annotation.RestController;\n@RestController\npublic class HelloController {\n    @GetMapping("/")\n    public String hello() {\n        return "Hello from Spring Boot!";\n    }\n}';
+                };
+
+                const updateMockFiles = (modificationPrompt) => {
+                    if (modificationPrompt.toLowerCase().includes("blue")) {
+                        fileContents['styles.css'] = "body { background-color: #bfdbfe; }";
+                        fileContents['index.html'] = fileContents['index.html'].replace("<h1>Hello, World!</h1>", "<h1>Hello, Modified World!</h1>");
+                        fileContents['App.js'] = fileContents['App.js'].replace("<h1>MERN Stack App</h1>", "<h1>MERN App Modified with a New Prompt!</h1>");
+                        fileContents['HelloController.java'] = fileContents['HelloController.java'].replace("Hello from Spring Boot!", "Hello from the blue-themed Spring Boot app!");
+                    }
+                    if (modificationPrompt.toLowerCase().includes("button")) {
+                        fileContents['index.html'] = fileContents['index.html'].replace("</body>", '<button>New Button!</button></body>');
+                    }
+                    fileContents['README.md'] += "\n\n---" + "\n\nThis project was modified with the prompt: '" + modificationPrompt + "'.";
+                };
+
+                const updateCodeView = (selectedFile) => {
+                    codeContent.textContent = fileContents[selectedFile];
+                };
+
+                const simulateProcess = (isModification = false) => {
+                    const projectTitle = sanitizeInput(document.getElementById('projectTitle').value) || "My Awesome App";
+                    const techStack = document.getElementById('techStack').value;
+                    const projectDescription = sanitizeInput(document.getElementById('projectDescription').value) || "A simple placeholder app.";
+                    const modificationPrompt = isModification ? sanitizeInput(document.getElementById('modificationPrompt').value) : "";
+                    
+                    currentTechStack = techStack;
+
+                    const button = isModification ? modifyButton : createButton;
+                    button.disabled = true;
+                    button.innerHTML = `<div class="flex items-center justify-center space-x-2"><span class="loading-dot w-2 h-2 bg-white rounded-full"></span><span class="loading-dot w-2 h-2 bg-white rounded-full"></span><span class="loading-dot w-2 h-2 bg-white rounded-full"></span></div>`;
+                    
+                    if (!isModification) {
+                         generateMockFiles(projectTitle, techStack, projectDescription);
+                         livePreviewFrame.srcdoc = initialPreviewContent;
+                    } else {
+                         updateMockFiles(modificationPrompt);
+                    }
+
+                    let steps = [];
+                    if (techStack === 'mern') {
+                        steps = [
+                            { status: "Planner Agent is outlining MERN architecture...", duration: 2500 },
+                            { status: "React Agent is generating frontend components...", duration: 3500, preview: true, content: '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>React App</title><script src="https://cdn.tailwindcss.com"><' + '/script></head><body class="bg-gray-100 p-8 flex items-center justify-center min-h-screen"><div class="bg-white p-8 rounded-3xl shadow-xl text-center max-w-md w-full border-2 border-emerald-500"><h1 class="text-3xl font-bold text-gray-800 mb-4">React Frontend!</h1><p class="text-gray-600 mb-6">The AI agent is now building the server-side logic in the background.</p></div></body></html>'},
+                            { status: "Node.js Agent is setting up the Express server...", duration: 3000 },
+                            { status: "MongoDB Agent is defining database schema...", duration: 3000 },
+                            { status: "Integrator Agent is connecting all pieces...", duration: 2000 },
+                            { status: "All tasks completed. Your MERN app is ready!", duration: 1000 }
+                        ];
+                    } else if (techStack === 'java-full-stack') {
+                         steps = [
+                            { status: "Java Architect Agent is designing the project structure...", duration: 2500 },
+                            { status: "Spring Boot Agent is creating the back-end...", duration: 3500 },
+                            { status: "Java Frontend Agent is creating the user interface...", duration: 3000, preview: true, content: '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Java App</title><script src="https://cdn.tailwindcss.com"><' + '/script></head><body class="bg-gray-100 p-8 flex items-center justify-center min-h-screen"><div class="bg-white p-8 rounded-3xl shadow-xl text-center max-w-md w-full border-2 border-emerald-500"><h1 class="text-3xl font-bold text-gray-800 mb-4">Java Frontend!</h1><p class="text-gray-600 mb-6">The back-end and API endpoints are being generated now!</p></div></body></html>'},
+                            { status: "Bundling all project files...", duration: 2000 },
+                            { status: "All tasks completed. Your Java app is ready!", duration: 1000 }
+                        ];
+                    }
+                    else {
+                        steps = [
+                            { status: "Agent team is assembling...", duration: 1500 },
+                            { status: "Planner Agent is analyzing the request...", duration: 2000 },
+                            { status: "Generating HTML structure...", duration: 2500 },
+                            { status: "Generating CSS styles...", duration: 3000 },
+                            { status: "Developing core JavaScript logic...", duration: 3500 },
+                            { status: "Integrator Agent is bundling files...", duration: 1500 },
+                            { status: "All tasks completed. Your app is ready!", duration: 1000 }
+                        ];
+                    }
+                    if (isModification) {
+                        steps = [
+                            { status: "Agents are reviewing your modification request...", duration: 2000 },
+                            { status: "Agents are applying changes...", duration: 3000 },
+                            { status: "Bundling modified files...", duration: 1500 },
+                            { status: "Modification complete! Your app is updated.", duration: 1000 }
+                        ];
+                    }
+
+                    let currentTime = 0;
+                    steps.forEach((step, index) => {
+                        currentTime += step.duration;
+                        setTimeout(() => {
+                            statusMessage.textContent = step.status;
+                            if (step.preview) {
+                                livePreviewFrame.srcdoc = step.content;
+                            }
+
+                            if (index === steps.length - 1) {
+                                livePreviewFrame.srcdoc = finalPreviewContent;
+                                createMockZip(currentTechStack);
+                                button.disabled = false;
+                                if (isModification) {
+                                    button.innerHTML = "Apply Another Change";
+                                    showMessageModal("Your app has been successfully modified! The new code has been bundled for download.");
+                                } else {
+                                    button.innerHTML = "Create Another App";
+                                    initialForm.classList.add('hidden');
+                                    modificationForm.classList.remove('hidden');
+                                    showMessageModal("Your app works! It's been successfully built by the AI agents. You can now download it and make modifications.");
+                                }
+                                populateFileSelect(currentTechStack);
+                                updateCodeView(fileSelect.value);
+                            }
+                        }, currentTime);
+                    });
+                };
+
+                const createMockZip = (techStack) => {
+                    const zip = new JSZip();
+                    
+                    if (techStack === 'mern') {
+                        zip.folder("client").file("App.js", fileContents['App.js']);
+                        zip.folder("client").file("package.json", '{ "name": "client", "version": "1.0.0", "dependencies": { "react": "^18.2.0", "react-dom": "^18.2.0" } }');
+                        zip.folder("server").file("server.js", fileContents['server.js']);
+                        zip.folder("server").file("package.json", '{ "name": "server", "version": "1.0.0", "dependencies": { "express": "^4.18.2", "mongoose": "^6.8.0" } }');
+                        zip.file("README.md", fileContents['README.md']);
+                    } else if (techStack === 'java-full-stack') {
+                         zip.folder("src/main/java/com/example/demo").file("DemoApplication.java", fileContents['DemoApplication.java']);
+                         zip.folder("src/main/java/com/example/demo/controller").file("HelloController.java", fileContents['HelloController.java']);
+                         zip.file("pom.xml", fileContents['pom.xml']);
+                         zip.file("README.md", fileContents['README.md']);
+                    }
+                    else {
+                        zip.file("index.html", fileContents['index.html']);
+                        zip.file("styles.css", fileContents['styles.css']);
+                        zip.file("main.js", fileContents['main.js']);
+                        zip.file("README.md", fileContents['README.md']);
+                    }
+
+                    zip.generateAsync({ type: "blob" })
+                        .then(function(content) {
+                            const url = URL.createObjectURL(content);
+                            downloadLink.href = url;
+                            downloadLink.classList.remove('hidden');
+                        });
+                };
+
+                const populateFileSelect = (techStack) => {
+                    fileSelect.innerHTML = '';
+                    let files = [];
+                    if (techStack === 'mern') {
+                        files = ['App.js', 'server.js', 'README.md'];
+                    } else if (techStack === 'java-full-stack') {
+                        files = ['DemoApplication.java', 'HelloController.java', 'pom.xml', 'README.md'];
+                    } else {
+                        files = ['index.html', 'styles.css', 'main.js', 'README.md'];
+                    }
+                    files.forEach(file => {
+                        const option = document.createElement('option');
+                        option.value = file;
+                        option.textContent = file;
+                        fileSelect.appendChild(option);
+                    });
+                };
+
+                livePreviewFrame.addEventListener('load', () => {
+                    const iframeDoc = livePreviewFrame.contentDocument || livePreviewFrame.contentWindow.document;
+                    const finalButton = iframeDoc.getElementById('finalButton');
+                    if (finalButton) {
+                        finalButton.addEventListener('click', () => {
+                            console.log("Your app works! It's been successfully built by the AI agents.");
+                            showMessageModal("Your app works! The AI agents have successfully built it.");
+                        });
+                    }
+                });
+                
+                livePreviewBtn.addEventListener('click', () => {
+                    livePreviewContainer.classList.remove('hidden');
+                    codeViewContainer.classList.add('hidden');
+                    livePreviewBtn.classList.add('bg-gray-500', 'text-white');
+                    livePreviewBtn.classList.remove('bg-gray-400', 'text-gray-800');
+                    codeViewBtn.classList.add('bg-gray-400', 'text-gray-800');
+                    codeViewBtn.classList.remove('bg-gray-500', 'text-white');
+                });
+                
+                codeViewBtn.addEventListener('click', () => {
+                    codeViewContainer.classList.remove('hidden');
+                    livePreviewContainer.classList.add('hidden');
+                    codeViewBtn.classList.add('bg-gray-500', 'text-white');
+                    codeViewBtn.classList.remove('bg-gray-400', 'text-gray-800');
+                    livePreviewBtn.classList.add('bg-gray-400', 'text-gray-800');
+                    livePreviewBtn.classList.remove('bg-gray-500', 'text-white');
+                });
+
+                fileSelect.addEventListener('change', (event) => {
+                    updateCodeView(event.target.value);
+                });
+
+                createButton.addEventListener('click', () => simulateProcess(false));
+                modifyButton.addEventListener('click', () => simulateProcess(true));
+            } catch (error) {
+                console.error("An error occurred during app execution:", error);
+            }
+        });
+    </script>
+</body>
+</html>
