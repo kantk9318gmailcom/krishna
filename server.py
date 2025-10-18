@@ -9,7 +9,7 @@ from crewai import Agent, Task, Crew, Process, LLM
 load_dotenv()
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'src'
+app.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_DIR', 'src')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB limit
 
 # --- AI Agent Setup ---

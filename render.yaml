@@ -3,8 +3,10 @@ services:
     name: student-matching-agent
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements-render.txt
     startCommand: gunicorn server:app -b 0.0.0.0:$PORT
     envVars:
       - key: GOOGLE_API_KEY
         sync: false
+      - key: UPLOAD_DIR
+        value: /tmp
